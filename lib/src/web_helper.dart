@@ -130,8 +130,14 @@ class WebHelper {
       cacheObject.eTag = response.header("etag");
     }
 
+    var fileExtension = '';
+
     final urlPath = Uri.parse(url).path;
-    var fileExtension = urlPath.substring(urlPath.lastIndexOf("."));
+    int indexOfSeperator = urlPath.lastIndexOf(".");
+    if (indexOfSeperator >= 0) {
+      fileExtension = urlPath.substring(indexOfSeperator);
+    }
+
     if (fileExtension.isEmpty && response.hasHeader("content-type")) {
       var type = response.header("content-type").split("/");
       if (type.length == 2) {
