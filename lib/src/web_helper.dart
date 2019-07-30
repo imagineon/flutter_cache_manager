@@ -64,7 +64,7 @@ class WebHelper {
       var success = false;
 
       var response = await _fileFetcher(url, headers: headers);
-      success = await _handleHttpResponse(response, cacheObject);
+      success = await _handleHttpResponse(response, cacheObject, url);
 
       if (!success) {
         throw HttpException(
@@ -86,10 +86,10 @@ class WebHelper {
   }
 
   Future<bool> _handleHttpResponse(
-      FileFetcherResponse response, CacheObject cacheObject) async {
+      FileFetcherResponse response, CacheObject cacheObject, String url) async {
     if (response.statusCode == 200 || response.statusCode == 201) {
       var basePath = await _store.filePath;
-      _setDataFromHeaders(cacheObject, response);
+      _setDataFromHeaders(cacheObject, response, url);
       var path = p.join(basePath, cacheObject.relativePath);
 
       var folder = new File(path).parent;
@@ -100,14 +100,14 @@ class WebHelper {
       return true;
     }
     if (response.statusCode == 304) {
-      await _setDataFromHeaders(cacheObject, response);
+      await _setDataFromHeaders(cacheObject, response, url);
       return true;
     }
     return false;
   }
 
   _setDataFromHeaders(
-      CacheObject cacheObject, FileFetcherResponse response) async {
+      CacheObject cacheObject, FileFetcherResponse response, String url) async {
     //Without a cache-control header we keep the file for a week
     var ageDuration = new Duration(days: 7);
 
@@ -130,8 +130,9 @@ class WebHelper {
       cacheObject.eTag = response.header("etag");
     }
 
-    var fileExtension = "";
-    if (response.hasHeader("content-type")) {
+    final urlPath = Uri.parse(url).path;
+    var fileExtension = urlPath.substring(urlPath.lastIndexOf("."));
+    if (fileExtension.isEmpty && response.hasHeader("content-type")) {
       var type = response.header("content-type").split("/");
       if (type.length == 2) {
         fileExtension = ".${type[1]}";
